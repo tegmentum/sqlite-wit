@@ -1,0 +1,149 @@
+package sqlite:extension@0.1.0;
+
+/// Declarative extension manifest. The host calls `describe()` once
+/// after instantiation and registers everything the manifest names
+/// with the underlying SQLite — no imperative `register-*` calls.
+///
+/// IDs in the manifest are assigned by the guest and used by the host
+/// when dispatching calls back into the corresponding export interface
+/// (e.g. scalar-function.call(func-id, ...)).
+interface metadata {
+    use types.{function-flags};
+
+    /// One scalar SQL function declared by the extension.
+    record scalar-function-spec {
+        /// Guest-assigned function ID. Echoed back in scalar-function.call.
+        id: u64,
+        /// SQL name visible inside the database.
+        name: string,
+        /// Number of arguments; -1 means variadic.
+        num-args: s32,
+        func-flags: function-flags,
+    }
+
+    /// One aggregate (or window) SQL function declared by the extension.
+    record aggregate-function-spec {
+        id: u64,
+        name: string,
+        num-args: s32,
+        func-flags: function-flags,
+        /// True if this aggregate also implements window-function ops
+        /// (value() + inverse()).
+        is-window: bool,
+    }
+
+    /// One custom collation declared by the extension.
+    record collation-spec {
+        id: u64,
+        name: string,
+    }
+
+    /// Full extension manifest, returned from `describe()`.
+    record manifest {
+        name: string,
+        version: string,
+        scalar-functions: list<scalar-function-spec>,
+        aggregate-functions: list<aggregate-function-spec>,
+        collations: list<collation-spec>,
+        /// True if the extension also exports an `authorizer` interface.
+        has-authorizer: bool,
+        /// True if the extension also exports an `update-hook` interface.
+        has-update-hook: bool,
+        /// True if the extension also exports a `commit-hook` interface.
+        has-commit-hook: bool,
+    }
+
+    /// Return the extension's full manifest. Called once by the host
+    /// after instantiation, before any other guest function is dispatched.
+    describe: func() -> manifest;
+}
+
+/// Optional lifecycle callbacks.
+interface lifecycle {
+    /// Called after instantiation, after `metadata.describe()` has been
+    /// read, before any SQL routes traffic into the extension.
+    on-load: func() -> result<_, string>;
+
+    /// Called before the extension is dropped.
+    on-unload: func();
+
+    /// Called when a database connection on which this extension is
+    /// active opens.
+    on-connect: func(db-name: string);
+
+    /// Called when such a connection closes.
+    on-disconnect: func(db-name: string);
+}
+
+/// Scalar function dispatch. The host calls `call` with the `func-id`
+/// declared in the corresponding `scalar-function-spec`.
+interface scalar-function {
+    use types.{sql-value};
+
+    call: func(func-id: u64, args: list<sql-value>) -> result<sql-value, string>;
+}
+
+/// Aggregate function dispatch. Supports both classic aggregates
+/// (step + finalize) and window functions (also value + inverse).
+///
+/// `context-id` is a host-assigned per-aggregation handle that lets
+/// the guest distinguish concurrent aggregations of the same function.
+interface aggregate-function {
+    use types.{sql-value};
+
+    /// Add one row's contribution to the aggregation context.
+    step: func(func-id: u64, context-id: u64, args: list<sql-value>) -> result<_, string>;
+
+    /// Produce the final aggregate value and release the context.
+    finalize: func(func-id: u64, context-id: u64) -> result<sql-value, string>;
+
+    /// Produce the current intermediate value without releasing the
+    /// context. Required only for window-mode aggregates.
+    value: func(func-id: u64, context-id: u64) -> result<sql-value, string>;
+
+    /// Remove one row's contribution from the context. Required only
+    /// for window-mode aggregates.
+    inverse: func(func-id: u64, context-id: u64, args: list<sql-value>) -> result<_, string>;
+}
+
+/// Custom collation comparison. Host calls `compare` for any string
+/// comparison that names a collation declared in the manifest.
+interface collation {
+    /// Return < 0 if a < b, 0 if a == b, > 0 if a > b.
+    compare: func(collation-id: u64, a: string, b: string) -> s32;
+}
+
+/// Authorization callback. Active only if `manifest.has-authorizer` is true.
+interface authorizer {
+    use types.{auth-action, auth-result};
+
+    authorize: func(
+        action: auth-action,
+        arg1: option<string>,
+        arg2: option<string>,
+        database: option<string>,
+        trigger: option<string>,
+    ) -> auth-result;
+}
+
+/// Row-level update hook. Active only if `manifest.has-update-hook` is true.
+interface update-hook {
+    use types.{update-operation};
+
+    on-update: func(
+        operation: update-operation,
+        database: string,
+        table: string,
+        rowid: s64,
+    );
+}
+
+/// Commit / rollback hook. Active only if `manifest.has-commit-hook` is true.
+interface commit-hook {
+    /// Called immediately before commit. Return false to convert the
+    /// commit into a rollback.
+    on-commit: func() -> bool;
+
+    /// Called after rollback completes.
+    on-rollback: func();
+}

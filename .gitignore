@@ -1,0 +1,12 @@
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Generated bindings (consumers vendor them per-language)
+generated/
+*.rs
