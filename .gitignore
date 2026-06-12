@@ -7,6 +7,11 @@
 # macOS
 .DS_Store
 
-# Generated bindings (consumers vendor them per-language)
+# Generated bindings consumed by external code (consumers vendor
+# them per-language). The Rust source under src/ is THIS repo's
+# canonical crate, not generated bindings, so it's tracked.
 generated/
-*.rs
+
+# Rust build artifacts
+target/
+Cargo.lock
