@@ -61,7 +61,12 @@ world collating {
     export collation;
 }
 
-/// Extension that authorizes SQL actions.
+/// Extension that authorizes SQL actions. scalar-function is
+/// exported alongside the authorizer so the host's metadata
+/// bootstrap path (which always instantiates against the minimal
+/// world to read manifest.describe) can resolve the component;
+/// extensions that don't expose SQL functions just return an error
+/// from `call`.
 world authorizing {
     import types;
     import spi;
@@ -69,10 +74,13 @@ world authorizing {
     import config;
 
     export metadata;
+    export scalar-function;
     export authorizer;
 }
 
-/// Extension that observes row-level changes and transaction boundaries.
+/// Extension that observes row-level changes and transaction
+/// boundaries. scalar-function exported for the same reason as in
+/// `authorizing` — uniform metadata bootstrap shape.
 world hooked {
     import types;
     import spi;
@@ -80,6 +88,7 @@ world hooked {
     import config;
 
     export metadata;
+    export scalar-function;
     export update-hook;
     export commit-hook;
 }
