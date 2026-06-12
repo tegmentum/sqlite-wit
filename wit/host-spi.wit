@@ -13,6 +13,24 @@ interface spi {
 
     /// Execute one or more statements as a batch; return total rows changed.
     execute-batch: func(sql: string) -> result<s64, sqlite-error>;
+
+    /// "Live" variants: see the embedding cli's state, including
+    /// uncommitted writes from the outer transaction and any SQL
+    /// functions the user has loaded after the .load that brought
+    /// THIS extension in. The non-live variants (above) read a
+    /// committed snapshot through a separate host-side connection;
+    /// extensions wanting visibility into the in-flight outer
+    /// statement call -live and pay the cost of cooperative
+    /// re-entry into the cli reactor.
+    ///
+    /// Hosts that don't support re-entry (any deployment running
+    /// the wasi:cli command-mode cli, or any sync-lifted reactor
+    /// embedding) MUST return a structured error from these
+    /// methods rather than silently downgrading to the committed
+    /// snapshot path — the semantic difference matters.
+    execute-live: func(sql: string, params: list<sql-value>) -> result<query-result, sqlite-error>;
+    execute-scalar-live: func(sql: string, params: list<sql-value>) -> result<sql-value, sqlite-error>;
+    execute-batch-live: func(sql: string) -> result<s64, sqlite-error>;
 }
 
 /// Prepared statement lifecycle. For extensions that bind once and
