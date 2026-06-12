@@ -45,6 +45,23 @@ world lifecycle-aware {
     export aggregate-function;
 }
 
+/// Extension that resolves URIs to component bytes. Imports `http`
+/// for network-fetching resolvers; the host's capability gate is
+/// what enforces which hosts the resolver can hit (no resolver-
+/// internal policy). scalar-function is exported for the same
+/// metadata-bootstrap reason as `authorizing` / `hooked`.
+world resolving {
+    import types;
+    import spi;
+    import logging;
+    import config;
+    import http;
+
+    export metadata;
+    export scalar-function;
+    export resolver;
+}
+
 /// Extension that adds a custom collation. Inherits the minimal
 /// import set; adds the collation export. Same shape as `minimal`
 /// plus collation — keeps the import surface small for extensions

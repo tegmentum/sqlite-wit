@@ -146,6 +146,23 @@ interface update-hook {
     );
 }
 
+/// Component-fetched URI resolution. A resolver is itself an
+/// extension component — sandboxed and gated by the same
+/// capability/policy system as any other loadable extension. The
+/// host registers resolvers per URI scheme (https → http-resolver,
+/// oci → oci-resolver, ...); `.load <uri>` looks up the scheme,
+/// calls `resolve(uri)`, hashes the returned bytes into the CAS
+/// cache, and then proceeds with the normal load_extension path
+/// against the cached file.
+interface resolver {
+    /// Fetch the component bytes addressed by `uri`. The host
+    /// hashes + caches whatever this returns. URI parsing is the
+    /// resolver's responsibility — the host dispatches strictly by
+    /// scheme. Errors come back as strings; the host wraps them
+    /// with the URI context.
+    resolve: func(uri: string) -> result<list<u8>, string>;
+}
+
 /// Commit / rollback hook. Active only if `manifest.has-commit-hook` is true.
 interface commit-hook {
     /// Called immediately before commit. Return false to convert the
