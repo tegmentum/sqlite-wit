@@ -13,27 +13,6 @@ interface spi {
 
     /// Execute one or more statements as a batch; return total rows changed.
     execute-batch: func(sql: string) -> result<s64, sqlite-error>;
-
-    /// "Live" variants: open a FRESH host-side sqlite3 connection
-    /// per call (vs. the pooled one used by execute / execute-scalar
-    /// / execute-batch). The live methods see the latest committed
-    /// state — schema changes, completed sub-transactions, and any
-    /// SQL functions registered on the cli's connection at .load
-    /// time — but they DO NOT see uncommitted writes from the
-    /// outer transaction. That was the original ambition; it turns
-    /// out to be incompatible with the WebAssembly Component Model
-    /// task spec, which forbids the host from recursively entering
-    /// a top-level instance while a call is in flight. See
-    /// `host/SPI-LIVE-ARCHITECTURE.md` for the full design write-up
-    /// and the architectural finding that closed this question.
-    ///
-    /// The "live" name is preserved for API stability. Treat these
-    /// as "fresh committed snapshot" — read-your-writes works for
-    /// state committed in earlier statements, not for state
-    /// uncommitted in the in-flight outer eval.
-    execute-live: func(sql: string, params: list<sql-value>) -> result<query-result, sqlite-error>;
-    execute-scalar-live: func(sql: string, params: list<sql-value>) -> result<sql-value, sqlite-error>;
-    execute-batch-live: func(sql: string) -> result<s64, sqlite-error>;
 }
 
 /// Prepared statement lifecycle. For extensions that bind once and
