@@ -166,7 +166,10 @@ impl Policy {
     /// Return capabilities in `declared` that are NOT granted.
     /// Empty result ⇒ manifest is satisfiable.
     pub fn missing<'a>(&self, declared: &'a [Capability]) -> Vec<&'a Capability> {
-        declared.iter().filter(|c| !self.granted.contains(c)).collect()
+        declared
+            .iter()
+            .filter(|c| !self.granted.contains(c))
+            .collect()
     }
 
     /// `Ok(())` if every entry of `declared` is granted; otherwise
@@ -237,11 +240,7 @@ mod tests {
     #[test]
     fn deny_all_grants_nothing() {
         let p = Policy::deny_all();
-        for c in [
-            Capability::Spi,
-            Capability::Http,
-            Capability::Random,
-        ] {
+        for c in [Capability::Spi, Capability::Http, Capability::Random] {
             assert!(!p.is_granted(c));
         }
     }
@@ -259,10 +258,7 @@ mod tests {
         let p = Policy::deny_all().with_grants([Capability::Spi]);
         let declared = [Capability::Spi, Capability::State, Capability::Http];
         let missing = p.missing(&declared);
-        assert_eq!(
-            missing,
-            vec![&Capability::State, &Capability::Http]
-        );
+        assert_eq!(missing, vec![&Capability::State, &Capability::Http]);
     }
 
     #[test]
