@@ -12,6 +12,23 @@ world minimal {
     export scalar-function;
 }
 
+/// Minimal + outbound HTTP. For extensions whose scalars need
+/// to call out to the network (http_get / jwks_fetch / etc.).
+/// The host gates every request through the manifest's
+/// declared `capability::http` and the load-time http-policy
+/// (allowed-hosts, allowed-methods, max-body-bytes,
+/// timeout-ms).
+world minimal-http {
+    import types;
+    import spi;
+    import logging;
+    import config;
+    import http;
+
+    export metadata;
+    export scalar-function;
+}
+
 /// Stateful extension — adds aggregate functions, host-managed state,
 /// and an in-memory cache.
 world stateful {
