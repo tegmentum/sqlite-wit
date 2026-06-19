@@ -50,6 +50,12 @@ interface metadata {
         /// needed. For these the host treats xCreate as xConnect
         /// and there is no schema persisted.
         eponymous: bool,
+        /// True iff the extension also exports the `vtab-update`
+        /// interface for this vtab. When true, the host registers
+        /// a mutable `sqlite3_module` whose xUpdate / transactional
+        /// hooks route through `vtab-update`; INSERT/UPDATE/DELETE
+        /// against the vtab fire the extension's `update` callback.
+        mutable: bool,
     }
 
     /// Full extension manifest, returned from `describe()`.
@@ -191,9 +197,9 @@ interface commit-hook {
 /// `vtab-id` declared in the corresponding `vtab-spec` plus a
 /// host-assigned `instance-id` (per `CREATE VIRTUAL TABLE`) and,
 /// for cursor calls, a host-assigned `cursor-id` (per `xOpen`).
-/// v1 is read-only: no `xUpdate`, no `xRename`, no transactional
-/// vtabs, no `xFindFunction` — those land in a `vtab-mutating`
-/// world later.
+/// Read-only surface: every vtab implements this. Mutating vtabs
+/// (vtab-spec.mutable = true) additionally export `vtab-update`
+/// for xUpdate + transactional hooks.
 interface vtab {
     use types.{sql-value};
 
@@ -340,4 +346,90 @@ interface vtab {
     /// rowid joins; vtabs that don't have a natural rowid can
     /// return a monotonic counter.
     rowid: func(vtab-id: u64, cursor-id: u64) -> result<s64, string>;
+}
+
+/// Mutating-vtab dispatch. Active only when the corresponding
+/// `vtab-spec` declares `mutable: true`. The host wires xUpdate +
+/// transactional hooks to these methods; SQLite's INSERT / UPDATE /
+/// DELETE on the vtab fires `update`; BEGIN / COMMIT / ROLLBACK
+/// fire the transactional callbacks; SAVEPOINT routes through
+/// `savepoint` / `release` / `rollback-to`. xRename routes through
+/// `rename` so the extension can rewrite any persistent state keyed
+/// by table name.
+///
+/// Errors from `update` translate to SQLITE_ERROR; the row is not
+/// written and the surrounding statement reports the error string.
+/// Transactional callback errors abort the transaction.
+interface vtab-update {
+    use types.{sql-value};
+
+    /// xUpdate dispatch.
+    ///
+    /// SQLite encodes the operation in the args list:
+    ///   * `len == 1, args[0] = integer`       DELETE rowid args[0]
+    ///   * `len > 1,  args[0] = null`          INSERT; args[1] is the
+    ///     proposed rowid (null = pick); args[2..] are column values
+    ///     in declared-schema order.
+    ///   * `len > 1,  args[0] = integer`       UPDATE old rowid
+    ///     args[0]; args[1] new rowid (may equal args[0] = "no
+    ///     rowid change"); args[2..] are new column values.
+    ///
+    /// The returned i64 is the new rowid (meaningful for INSERT;
+    /// SQLite ignores it for DELETE / UPDATE).
+    update: func(
+        vtab-id: u64,
+        instance-id: u64,
+        args: list<sql-value>,
+    ) -> result<s64, string>;
+
+    /// xBegin — sqlite is about to issue writes against this vtab.
+    /// Called once per transaction per vtab. Errors abort the
+    /// transaction.
+    begin: func(vtab-id: u64, instance-id: u64) -> result<_, string>;
+
+    /// xSync — sqlite reached the durability barrier of a two-
+    /// phase commit. Flush pending writes; errors abort.
+    sync: func(vtab-id: u64, instance-id: u64) -> result<_, string>;
+
+    /// xCommit — finalize. Called once per transaction per vtab.
+    commit: func(vtab-id: u64, instance-id: u64) -> result<_, string>;
+
+    /// xRollback — discard all pending writes for the txn. Errors
+    /// here cannot abort what is already being rolled back; the
+    /// host logs and continues.
+    rollback: func(vtab-id: u64, instance-id: u64) -> result<_, string>;
+
+    /// xRename — sqlite renamed the vtab via `ALTER TABLE …
+    /// RENAME TO`. The extension updates any persistent state
+    /// keyed by table name (shadow rows, file paths, indexes).
+    rename: func(
+        vtab-id: u64,
+        instance-id: u64,
+        new-name: string,
+    ) -> result<_, string>;
+
+    /// xSavepoint — sqlite opened a savepoint. The integer is the
+    /// savepoint id sqlite chose. Guests track the nesting depth.
+    savepoint: func(
+        vtab-id: u64,
+        instance-id: u64,
+        savepoint: s32,
+    ) -> result<_, string>;
+
+    /// xRelease — sqlite is dropping all savepoints with id >=
+    /// `savepoint`. Merges their writes into the surrounding scope.
+    release: func(
+        vtab-id: u64,
+        instance-id: u64,
+        savepoint: s32,
+    ) -> result<_, string>;
+
+    /// xRollbackTo — sqlite is discarding all writes since
+    /// savepoint `savepoint` was opened. The savepoint itself stays
+    /// open.
+    rollback-to: func(
+        vtab-id: u64,
+        instance-id: u64,
+        savepoint: s32,
+    ) -> result<_, string>;
 }

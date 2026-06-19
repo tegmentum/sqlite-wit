@@ -147,10 +147,9 @@ world hooked {
 }
 
 /// Extension that exposes one or more virtual-table modules
-/// (v1: read-only). scalar-function is exported alongside vtab
-/// for the same metadata-bootstrap reason as `authorizing`. v1
-/// has no xUpdate / xRename / transactional hooks  see the
-/// vtab interface for the scope.
+/// (read-only). scalar-function is exported alongside vtab for
+/// the same metadata-bootstrap reason as `authorizing`. For vtabs
+/// that mutate (INSERT/UPDATE/DELETE), use `tabular-mutating`.
 world tabular {
     import types;
     import spi;
@@ -160,6 +159,24 @@ world tabular {
     export metadata;
     export scalar-function;
     export vtab;
+}
+
+/// Extension that exposes one or more *mutating* virtual-table
+/// modules. Adds the `vtab-update` export on top of `tabular`'s
+/// read surface. The extension declares `vtab-spec.mutable = true`
+/// for each module that participates; vtabs whose spec leaves
+/// `mutable = false` still route through the read-only `vtab`
+/// surface even within this world.
+world tabular-mutating {
+    import types;
+    import spi;
+    import logging;
+    import config;
+
+    export metadata;
+    export scalar-function;
+    export vtab;
+    export vtab-update;
 }
 
 /// Full-featured extension — every host capability available, every
@@ -191,4 +208,5 @@ world full {
     export update-hook;
     export commit-hook;
     export vtab;
+    export vtab-update;
 }
