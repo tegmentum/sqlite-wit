@@ -432,4 +432,25 @@ interface vtab-update {
         instance-id: u64,
         savepoint: s32,
     ) -> result<_, string>;
+
+    /// xShadowName — module-level check (no instance). SQLite asks
+    /// "is `name` a shadow-table name for this vtab module?". Used
+    /// by PRAGMA writable_schema and integrity checks to know
+    /// which tables a vtab privately owns. Default-false implies
+    /// "this vtab owns no shadow tables".
+    is-shadow-name: func(vtab-id: u64, name: string) -> bool;
+
+    /// xIntegrity — per-instance integrity check. Called when
+    /// `PRAGMA integrity_check` (or `quick_check`) runs against a
+    /// db containing this vtab. Return Ok(()) when the vtab is
+    /// consistent; Err(msg) when not. `mode-flags` mirrors
+    /// sqlite's mFlags — bit 0 set means "quick check", anything
+    /// else is the full check.
+    integrity: func(
+        vtab-id: u64,
+        instance-id: u64,
+        schema: string,
+        table-name: string,
+        mode-flags: u32,
+    ) -> result<_, string>;
 }
