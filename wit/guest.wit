@@ -56,6 +56,12 @@ interface metadata {
         /// hooks route through `vtab-update`; INSERT/UPDATE/DELETE
         /// against the vtab fire the extension's `update` callback.
         mutable: bool,
+        /// True iff the extension implements `vtab.fetch-batch` for
+        /// this vtab. The cli's trampoline calls fetch-batch once
+        /// per ~64-row block and serves xNext/xEof/xColumn/xRowid
+        /// from a local cache  for a 5-col, 100k-row scan that's
+        /// 1.5k WIT crossings instead of 600k.
+        batched: bool,
     }
 
     /// Full extension manifest, returned from `describe()`.
@@ -346,6 +352,35 @@ interface vtab {
     /// rowid joins; vtabs that don't have a natural rowid can
     /// return a monotonic counter.
     rowid: func(vtab-id: u64, cursor-id: u64) -> result<s64, string>;
+
+    /// One row in a batched fetch result. `rowid` mirrors what
+    /// `vtab.rowid` would have returned; `columns` has every
+    /// column in declared-schema order (use NULL for HIDDEN
+    /// columns the row doesn't carry).
+    record vtab-row {
+        rowid: s64,
+        columns: list<sql-value>,
+    }
+
+    /// Batched fetch  return up to `max-rows` rows starting from
+    /// the cursor's current position. Each row carries the rowid +
+    /// every column the schema declares. The host caches the
+    /// batch and serves `next` / `eof` / `column` / `rowid` from
+    /// the cache without crossing back into the extension until
+    /// the batch is exhausted, at which point it calls
+    /// `fetch-batch` again.
+    ///
+    /// Returning an empty list signals EOF.
+    ///
+    /// Implementations that don't override this default to
+    /// returning Err("not implemented")  the host's cli
+    /// trampoline detects the error and falls back to the per-row
+    /// path. Per-vtab opt-in via `vtab-spec.batched: true`.
+    fetch-batch: func(
+        vtab-id: u64,
+        cursor-id: u64,
+        max-rows: u32,
+    ) -> result<list<vtab-row>, string>;
 }
 
 /// Mutating-vtab dispatch. Active only when the corresponding
