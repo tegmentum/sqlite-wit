@@ -58,6 +58,13 @@ interface spi {
     backup-into: func(src-db: string, dst-path: string, dst-db: string)
         -> result<_, sqlite-error>;
 
+    /// Mirror of backup-into  copy FROM a freshly-opened source
+    /// db at `src-path`'s `src-db` INTO the spi connection's
+    /// `dst-db` (default "main"). Used by `.restore`. Host opens
+    /// the source read-only.
+    restore-from: func(src-path: string, src-db: string, dst-db: string)
+        -> result<_, sqlite-error>;
+
     /// `sqlite3_busy_timeout` on the spi connection. Direct
     /// replacement for the `conn/busy-timeout` state-delta
     /// workaround once Stage 4 lands.
