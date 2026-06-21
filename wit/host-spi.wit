@@ -13,6 +13,17 @@ interface spi {
 
     /// Execute one or more statements as a batch; return total rows changed.
     execute-batch: func(sql: string) -> result<s64, sqlite-error>;
+
+    /// List the names of every VFS the host has registered. The
+    /// first entry is the default VFS. Process-global state, not
+    /// per-connection. Used by `.vfslist`.
+    list-vfs: func() -> list<string>;
+
+    /// Return the active VFS name for an attached database on
+    /// the extension's spi connection. `db-name` is e.g. "main"
+    /// or "temp". Errors if the db isn't attached or sqlite3
+    /// returns a non-success code. Used by `.vfsname`.
+    vfs-name: func(db-name: string) -> result<string, sqlite-error>;
 }
 
 /// Prepared statement lifecycle. For extensions that bind once and
