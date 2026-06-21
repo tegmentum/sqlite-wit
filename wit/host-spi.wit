@@ -24,6 +24,13 @@ interface spi {
     /// or "temp". Errors if the db isn't attached or sqlite3
     /// returns a non-success code. Used by `.vfsname`.
     vfs-name: func(db-name: string) -> result<string, sqlite-error>;
+
+    /// `sqlite3_serialize` against the extension's spi connection.
+    /// Returns a heap copy of `db-name`'s contents (typically
+    /// "main"). The extension's spi connection opens to the same
+    /// db path as the cli, so the bytes are equivalent to what the
+    /// cli would write. Used by `.serialize`.
+    serialize-db: func(db-name: string) -> result<list<u8>, sqlite-error>;
 }
 
 /// Prepared statement lifecycle. For extensions that bind once and
