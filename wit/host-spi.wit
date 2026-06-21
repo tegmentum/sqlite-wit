@@ -169,6 +169,16 @@ interface spi {
     /// the cli's `do_unload` to clean up before the extension's
     /// wasm component is dropped.
     unregister-extension: func(ext-name: string);
+
+    /// Register a custom collation on the host's shared connection.
+    /// `coll-id` is the WIT identifier the host's dispatch path
+    /// uses to route `collation-compare` calls back into the
+    /// extension. Stage 5e.10 companion to register-scalar.
+    register-collation: func(
+        ext-name: string,
+        name: string,
+        coll-id: u64,
+    ) -> result<_, sqlite-error>;
 }
 
 /// Prepared statement lifecycle. For extensions that bind once and
