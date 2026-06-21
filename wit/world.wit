@@ -194,6 +194,12 @@ world dotcmd-aware {
     import cli-stdout;
     import cli-stderr;
     import cli-state;
+    /// Phase 5 / follow-up: gives dot-command extensions a tight
+    /// slice of the loader (just enough to register peer
+    /// extensions). Used by `extensions/sqlink-meta-cli` to
+    /// implement `.sqlink install`; ordinary dot-command
+    /// extensions ignore it.
+    import loader-bridge;
 
     export metadata;
     export scalar-function;
