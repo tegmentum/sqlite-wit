@@ -123,6 +123,25 @@ interface spi {
     /// tied to the prior connection (extensions registered via
     /// `.load`, prepared statements, transactions) is invalidated.
     open-db: func(path: string) -> result<_, sqlite-error>;
+
+    /// Toggle sqlite3's statement-level trace callback on the
+    /// host's shared connection. When `on` is true, each prepared
+    /// statement's expanded SQL is appended to a host-side buffer;
+    /// `drain-trace-buf` retrieves and clears it. Used by `.trace`.
+    set-stmt-trace: func(on: bool);
+
+    /// Take the buffered trace lines accumulated since the last
+    /// drain. Returns an empty list when tracing is off or nothing
+    /// has fired. Idempotent  draining twice in a row yields the
+    /// same empty result the second time.
+    drain-trace-buf: func() -> list<string>;
+
+    /// Toggle a logging authorizer on the host's shared connection.
+    /// When `on` is true, every authorizer check is written to the
+    /// host's stderr (action code, action-arg, db, trigger). Used
+    /// by `.auth`. Replaces any extension-side authorizer the
+    /// loader installed; reload the extension to restore it.
+    set-auth-log: func(on: bool) -> result<_, sqlite-error>;
 }
 
 /// Prepared statement lifecycle. For extensions that bind once and
