@@ -114,6 +114,15 @@ interface spi {
         sql: string,
         named-params: list<named-param>,
     ) -> result<list<query-result>, sqlite-error>;
+
+    /// Re-open the host's spi connection against a new database
+    /// `path`. Empty path or `:memory:` opens a fresh in-memory
+    /// database. Used by `.open`  the cli no longer keeps its
+    /// own libsqlite3-sys connection, so `.open` must swap the
+    /// shared connection on the host side. Any pending state
+    /// tied to the prior connection (extensions registered via
+    /// `.load`, prepared statements, transactions) is invalidated.
+    open-db: func(path: string) -> result<_, sqlite-error>;
 }
 
 /// Prepared statement lifecycle. For extensions that bind once and
