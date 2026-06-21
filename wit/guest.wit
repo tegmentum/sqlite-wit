@@ -64,6 +64,52 @@ interface metadata {
         batched: bool,
     }
 
+    /// One CLI dot-command declared by the extension.
+    /// See `dot-command` interface in dotcmd.wit.
+    ///
+    /// All three entry points (interactive shell, argv subcommand,
+    /// SQL `dot_command(...)`) read these same fields  the cli
+    /// surface, the cli argv parser, and the `dot_command` SQL
+    /// function form one user-facing surface over one declaration.
+    record dot-command-spec {
+        /// Guest-assigned id; echoed back to `dot-command.invoke`.
+        id: u64,
+        /// The command name *without* the leading dot. Lowercase.
+        /// Reused as the argv subcommand name AND the first arg of
+        /// `dot_command()`. Single source of truth.
+        name: string,
+        /// Per-command version. Independent of the host extension's
+        /// `manifest.version`  one extension may ship many commands
+        /// that version independently. Surfaced by `--list-commands`
+        /// and `.sqlink list`.
+        version: string,
+        /// One-line summary for `.help` and `--list-commands`.
+        summary: string,
+        /// Synopsis line: `import-json <table> <file>`. Shown by
+        /// `--help-command` and `.help <name>` ahead of the
+        /// detailed description.
+        usage: string,
+        /// Extended help (multi-line, plain text or simple
+        /// markdown). May include examples; the cli renders it
+        /// verbatim. Empty = use `summary` + `usage` only.
+        help: string,
+        /// Worked examples. `description` is one line; `command` is
+        /// the form a user would type. Shown by `--help-command`.
+        examples: list<dot-command-example>,
+        /// True if the command must run against a writable db
+        /// connection. CLI rejects the call in read-only mode.
+        requires-write: bool,
+        /// True if the command needs argv at all  some are pure
+        /// queries (`.tables`, `.version`). Affects what
+        /// `--list-commands` shows in the usage column.
+        no-args: bool,
+    }
+
+    record dot-command-example {
+        description: string,
+        command: string,
+    }
+
     /// Full extension manifest, returned from `describe()`.
     record manifest {
         name: string,
@@ -72,6 +118,9 @@ interface metadata {
         aggregate-functions: list<aggregate-function-spec>,
         collations: list<collation-spec>,
         vtabs: list<vtab-spec>,
+        /// Dot commands the extension registers with the CLI.
+        /// Empty list = no CLI surface; the extension is data-side only.
+        dot-commands: list<dot-command-spec>,
         /// True if the extension also exports an `authorizer` interface.
         has-authorizer: bool,
         /// True if the extension also exports an `update-hook` interface.

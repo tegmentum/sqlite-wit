@@ -179,6 +179,27 @@ world tabular-mutating {
     export vtab-update;
 }
 
+/// Extension that registers one or more CLI dot commands.
+/// See dotcmd.wit + PLAN-dotcmd-plugins.md.
+///
+/// scalar-function is exported alongside dot-command for the
+/// same metadata-bootstrap reason as `authorizing`, `hooked`,
+/// `tabular`. Extensions that only ship dot commands return an
+/// error from `scalar-function.call`.
+world dotcmd-aware {
+    import types;
+    import spi;
+    import logging;
+    import config;
+    import cli-stdout;
+    import cli-stderr;
+    import cli-state;
+
+    export metadata;
+    export scalar-function;
+    export dot-command;
+}
+
 /// Full-featured extension — every host capability available, every
 /// guest hook offered. Use this when an extension genuinely needs the
 /// kitchen sink; prefer a narrower world otherwise.
@@ -198,6 +219,9 @@ world full {
     import encoding;
     import http;
     import dns;
+    import cli-stdout;
+    import cli-stderr;
+    import cli-state;
 
     export metadata;
     export lifecycle;
@@ -209,4 +233,5 @@ world full {
     export commit-hook;
     export vtab;
     export vtab-update;
+    export dot-command;
 }
