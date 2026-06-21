@@ -31,6 +31,56 @@ interface spi {
     /// db path as the cli, so the bytes are equivalent to what the
     /// cli would write. Used by `.serialize`.
     serialize-db: func(db-name: string) -> result<list<u8>, sqlite-error>;
+
+    // ---- PLAN-cli-shared-conn.md Stage 1 spi additions ----
+    //
+    // The cli's eval_sql + dot helpers use the methods below today
+    // via direct db::Connection calls. Migrating to spi means
+    // exposing each through the wasm boundary. Existing extensions
+    // can also use them (e.g. for the .changes/.last-insert-rowid
+    // helpers some manifest-builders need).
+
+    /// `sqlite3_changes` against the spi connection. Number of
+    /// rows affected by the most recent INSERT/UPDATE/DELETE.
+    changes: func() -> s64;
+    /// `sqlite3_total_changes` against the spi connection.
+    total-changes: func() -> s64;
+    /// `sqlite3_last_insert_rowid` against the spi connection.
+    last-insert-rowid: func() -> s64;
+    /// `sqlite3_memory_used`  process-global counter. Used by
+    /// the cli's `.stats` to print after each statement.
+    current-memory-used: func() -> s64;
+
+    /// `sqlite3_backup_*`  copy the spi connection's `src-db`
+    /// (default "main") into a freshly-opened db at `dst-path`'s
+    /// `dst-db`. Used by `.backup` / `.save` / `.clone`. Host
+    /// opens the destination read-write.
+    backup-into: func(src-db: string, dst-path: string, dst-db: string)
+        -> result<_, sqlite-error>;
+
+    /// `sqlite3_busy_timeout` on the spi connection. Direct
+    /// replacement for the `conn/busy-timeout` state-delta
+    /// workaround once Stage 4 lands.
+    set-busy-timeout: func(ms: s32) -> result<_, sqlite-error>;
+
+    /// `sqlite3_limit(category, value)`. `value` < 0 reads
+    /// without setting (matches the C API). Direct replacement
+    /// for the `conn/limit/<name>` delta path.
+    limit: func(category: s32, value: s32) -> s32;
+
+    /// `sqlite3_db_config(op, ...)` bool form. When `set` is
+    /// true, sets to `value`; when false, reads without setting.
+    /// Returns the current value either way. Replacement for the
+    /// `conn/db-config/<name>` delta path.
+    db-config-bool: func(op: s32, set: bool, value: bool)
+        -> result<bool, sqlite-error>;
+
+    /// `sqlite3_deserialize` against the spi connection.
+    /// Replaces the `conn/deserialize/<name>` blob-delta path
+    /// (kept around as the v1 channel; Stage 4 migrates the
+    /// extension to use this directly).
+    deserialize-db: func(db-name: string, bytes: list<u8>)
+        -> result<_, sqlite-error>;
 }
 
 /// Prepared statement lifecycle. For extensions that bind once and
@@ -47,6 +97,22 @@ interface prepared {
     finalize: func(stmt: stmt-handle) -> result<_, sqlite-error>;
     column-count: func(stmt: stmt-handle) -> u32;
     get-column-info: func(stmt: stmt-handle, index: u32) -> result<column-info, sqlite-error>;
+
+    /// PLAN-cli-shared-conn.md Stage 1: like `prepare`, but
+    /// returns the number of input bytes consumed alongside the
+    /// statement handle. The cli's eval loop uses this to walk
+    /// multi-statement input (`.read FILE`, pasted scripts).
+    /// `tail` is a byte offset into `sql`  the next prepare
+    /// starts at `sql[tail..]`.
+    prepare-with-tail: func(sql: string)
+        -> result<tuple<stmt-handle, u32>, sqlite-error>;
+
+    /// Optimized bulk-step. Reads up to `n` rows in one host
+    /// crossing; an empty list means the cursor reached Done.
+    /// Streaming-friendly: the caller pulls in chunks rather
+    /// than paying a wasm boundary cost per row.
+    step-batch: func(stmt: stmt-handle, n: u32)
+        -> result<list<list<sql-value>>, sqlite-error>;
 }
 
 /// Transactions and savepoints.
