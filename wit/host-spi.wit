@@ -142,6 +142,33 @@ interface spi {
     /// by `.auth`. Replaces any extension-side authorizer the
     /// loader installed; reload the extension to restore it.
     set-auth-log: func(on: bool) -> result<_, sqlite-error>;
+
+    /// Register a scalar function on the host's shared connection.
+    /// The host installs a native sqlite3 callback that crosses
+    /// back into the loaded extension's `scalar-call` via the
+    /// host's dispatch path. `ext-name` + `func-id` identify the
+    /// extension and the entry point inside it.
+    ///
+    /// Used by the cli's `do_load` when a loaded extension's
+    /// manifest enumerates a scalar function. Per
+    /// PLAN-cli-stages-5-6.md Stage 5e.10 the cli no longer
+    /// installs these trampolines on its own libsqlite3-sys
+    /// connection (SELECT from the extension's function would
+    /// otherwise miss  eval_sql runs against the shared spi
+    /// connection, not the cli's).
+    register-scalar: func(
+        ext-name: string,
+        name: string,
+        num-args: s32,
+        func-id: u64,
+    ) -> result<_, sqlite-error>;
+
+    /// Drop every registration the host installed for `ext-name`.
+    /// Scalars, aggregates, collations, hooks  whatever the
+    /// matching register-* methods previously bound. Called by
+    /// the cli's `do_unload` to clean up before the extension's
+    /// wasm component is dropped.
+    unregister-extension: func(ext-name: string);
 }
 
 /// Prepared statement lifecycle. For extensions that bind once and
