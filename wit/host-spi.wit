@@ -179,6 +179,18 @@ interface spi {
         name: string,
         coll-id: u64,
     ) -> result<_, sqlite-error>;
+
+    /// Register an aggregate function on the host's shared
+    /// connection. When `window` is true, the function also
+    /// participates in window-frame queries (xValue + xInverse
+    /// in addition to xStep + xFinalize). Stage 5e.10.
+    register-aggregate: func(
+        ext-name: string,
+        name: string,
+        num-args: s32,
+        func-id: u64,
+        window: bool,
+    ) -> result<_, sqlite-error>;
 }
 
 /// Prepared statement lifecycle. For extensions that bind once and
