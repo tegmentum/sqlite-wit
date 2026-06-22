@@ -491,6 +491,67 @@ interface dns {
     resolve: func(name: string, record-type: record-type) -> result<list<string>, dns-error>;
 }
 
+/// `sqlite3_session_*` API surfaced as named handles. Per
+/// PLAN-cli-stages-5-6.md Stage 6: the cli's old CLI_CONN-based
+/// `.session` was a no-op after Stage 3c (sessions captured
+/// CLI_CONN changes, but eval_sql ran against the host's
+/// shared connection). Sessions now live host-side, keyed by
+/// user-chosen name; the cli's `.session` is a dot-command
+/// extension that calls these methods. The handle map is shared
+/// between extension callers (LoadedState) and the cli
+/// (HostWrap)  in practice only the cli's session-cli
+/// extension uses it.
+interface session {
+    use types.{sqlite-error};
+
+    /// `sqlite3session_create(shared_spi_conn, db-name, ...)`.
+    /// `name` keys the resulting handle. Errors if `name` is
+    /// already in use, the db isn't attached, or sqlite3 returns
+    /// a non-zero code. `db-name` is typically "main".
+    session-create: func(name: string, db-name: string)
+        -> result<_, sqlite-error>;
+
+    /// `sqlite3session_attach`. `table` = none attaches every
+    /// table; `some(t)` attaches only that table. Errors if
+    /// `name` is unknown.
+    session-attach: func(name: string, table: option<string>)
+        -> result<_, sqlite-error>;
+
+    /// `sqlite3session_enable(on)`. Toggles change tracking
+    /// without throwing away accumulated state.
+    session-enable: func(name: string, on: bool)
+        -> result<_, sqlite-error>;
+
+    /// `sqlite3session_indirect(on)`. Marks subsequent changes
+    /// as indirect (i.e., produced by a trigger / fk action).
+    session-indirect: func(name: string, on: bool)
+        -> result<_, sqlite-error>;
+
+    /// `sqlite3session_isempty`. True if no changes have been
+    /// captured.
+    session-isempty: func(name: string)
+        -> result<bool, sqlite-error>;
+
+    /// `sqlite3session_changeset`. Returns the accumulated
+    /// changeset bytes (copied off the sqlite3-allocated buffer
+    /// and freed).
+    session-changeset: func(name: string)
+        -> result<list<u8>, sqlite-error>;
+
+    /// `sqlite3session_patchset`. Same as changeset but emits a
+    /// patchset (omits before-images for UPDATEs).
+    session-patchset: func(name: string)
+        -> result<list<u8>, sqlite-error>;
+
+    /// `sqlite3session_delete`. Releases the handle and removes
+    /// `name` from the host's map.
+    session-delete: func(name: string)
+        -> result<_, sqlite-error>;
+
+    /// Names of every currently-live session handle.
+    session-list: func() -> list<string>;
+}
+
 /// Encoding/decoding helpers.
 interface encoding {
     base64-encode: func(data: list<u8>) -> string;
