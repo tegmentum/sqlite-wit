@@ -142,6 +142,12 @@ world authorizing {
 /// Extension that observes row-level changes and transaction
 /// boundaries. scalar-function exported for the same reason as in
 /// `authorizing` — uniform metadata bootstrap shape.
+///
+/// Also exports `wal-hook` so extensions that only need the WAL
+/// substrate (the wal-archive extension being the canonical
+/// example) can pick this same world; the host's substrate routes
+/// dispatch by the manifest's `has-*-hook` flags so unused
+/// exports cost nothing.
 world hooked {
     import types;
     import spi;
@@ -153,6 +159,7 @@ world hooked {
     export scalar-function;
     export update-hook;
     export commit-hook;
+    export wal-hook;
 }
 
 /// Test-bench world that wires every hook surface in one
