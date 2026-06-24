@@ -95,4 +95,14 @@ interface loader-bridge {
     /// the launch-flag lookup at exec time matches exactly. The
     /// host computes this from `std::env::consts` (arch + os).
     host-target-triple: func() -> string;
+
+    /// Look up a process-environment variable from the host.
+    /// Returns `none` if unset or empty. Capability-gated on the
+    /// existing Spi capability (no new capability needed
+    /// operator already trusts the extension with cas-cache +
+    /// bundle reads via the bridge). Used by `bundle-cli` to honor
+    /// `$SQLINK_DEV_ROOT` when resolving the crate-root for
+    /// `.bundle build`, so an installed sqlink can be pointed at
+    /// the user's source checkout without recompiling bundle-cli.
+    env-var: func(name: string) -> option<string>;
 }
