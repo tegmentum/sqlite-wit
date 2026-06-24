@@ -61,6 +61,12 @@ pub enum Capability {
     /// operator's grant is purely an allow-the-surface bit;
     /// browser deployments fail-closed at the WIT contract.
     SpawnBuild,
+    /// Bundle storage via `sqlite:extension/bundles`. Grants the
+    /// extension read/write access to the host's cas-cache bundle
+    /// registry (PLAN-bundles.md #446). Pairs with `SpawnBuild`
+    /// for the with-build path; metadata-only operations need
+    /// only `Bundles`.
+    Bundles,
 }
 
 /// Outbound HTTP policy. The host's `http::handle` impl consults
