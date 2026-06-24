@@ -55,6 +55,12 @@ pub enum Capability {
     /// policy fields  the operator's grant is purely an
     /// allow-the-surface bit.
     S3,
+    /// Host-resident cargo build via `sqlite:extension/build`.
+    /// Substrate for the `bundle-cli` extension's baked-binary
+    /// path (PLAN-bundles.md #445/#446). No rich policy  the
+    /// operator's grant is purely an allow-the-surface bit;
+    /// browser deployments fail-closed at the WIT contract.
+    SpawnBuild,
 }
 
 /// Outbound HTTP policy. The host's `http::handle` impl consults
@@ -311,7 +317,7 @@ mod tests {
     #[test]
     fn deny_all_grants_nothing() {
         let p = Policy::deny_all();
-        for c in [Capability::Spi, Capability::Http, Capability::Random, Capability::S3] {
+        for c in [Capability::Spi, Capability::Http, Capability::Random, Capability::S3, Capability::SpawnBuild] {
             assert!(!p.is_granted(c));
         }
     }
