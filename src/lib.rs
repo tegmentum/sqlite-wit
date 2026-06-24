@@ -48,6 +48,13 @@ pub enum Capability {
     /// from `Spi` so an extension can read WAL bytes without
     /// holding the full SQL surface (and vice versa).
     WalFrames,
+    /// S3-compatible object storage via `sqlite:extension/s3-base`.
+    /// Substrate for the wal-archive extension's off-box sink
+    /// (PLAN-wal-archive-extension.md #440). Endpoint URL +
+    /// credentials are runtime arguments to each call rather than
+    /// policy fields  the operator's grant is purely an
+    /// allow-the-surface bit.
+    S3,
 }
 
 /// Outbound HTTP policy. The host's `http::handle` impl consults
@@ -304,7 +311,7 @@ mod tests {
     #[test]
     fn deny_all_grants_nothing() {
         let p = Policy::deny_all();
-        for c in [Capability::Spi, Capability::Http, Capability::Random] {
+        for c in [Capability::Spi, Capability::Http, Capability::Random, Capability::S3] {
             assert!(!p.is_granted(c));
         }
     }
