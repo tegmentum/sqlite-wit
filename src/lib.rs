@@ -361,6 +361,13 @@ mod tests {
     }
 
     #[test]
+    fn check_manifest_ignores_optional_without_grant() {
+        let p = Policy::deny_all().with_grants([Capability::Bundles]);
+        assert!(p.check_manifest(&[Capability::Bundles]).is_ok());
+        assert!(!p.is_granted(Capability::SpawnBuild));
+    }
+
+    #[test]
     fn http_allows_exact_host() {
         let h = HttpPolicy {
             allowed_hosts: vec!["api.example.com".into()],
