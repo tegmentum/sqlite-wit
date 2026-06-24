@@ -43,6 +43,11 @@ pub enum Capability {
     Encoding,
     Http,
     Dns,
+    /// Raw WAL-frame access via `sqlite:extension/wal-frames`.
+    /// Substrate for the wal-archive extension; gated separately
+    /// from `Spi` so an extension can read WAL bytes without
+    /// holding the full SQL surface (and vice versa).
+    WalFrames,
 }
 
 /// Outbound HTTP policy. The host's `http::handle` impl consults
