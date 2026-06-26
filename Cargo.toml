@@ -12,3 +12,8 @@ name = "sqlite_extension_policy"
 path = "src/lib.rs"
 
 [dependencies]
+# The canonical, db-agnostic policy types now live in the shared datalink
+# crate (sqlink + ducklink both consume them). This crate re-exports them so
+# every existing `sqlite_extension_policy::{...}` call site is unchanged.
+# datalink is PUBLIC.
+datalink-policy = { git = "https://github.com/tegmentum/datalink.git" }
