@@ -1,4 +1,4 @@
-package sqlite:extension@0.1.0;
+package sqlite:extension@1.0.0;
 
 /// loader-bridge  the small, tightly-scoped slice of the host's
 /// extension-loader surface that dot-command extensions are

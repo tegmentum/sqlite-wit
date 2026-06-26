@@ -1,4 +1,4 @@
-package sqlite:extension@0.1.0;
+package sqlite:extension@1.0.0;
 
 /// Top-level SQL execution. Host imports for extensions that need to
 /// run SQL against the embedding database.

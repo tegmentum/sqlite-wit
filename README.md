@@ -7,7 +7,7 @@ Vendored into both consumers as a git submodule.
 ## Package
 
 ```
-sqlite:extension@0.1.0
+sqlite:extension@1.0.0
 ```
 
 ## Files
@@ -32,14 +32,19 @@ variant sql-value {
     real(f64),
     text(string),
     blob(list<u8>),
+    wit-value(wit-value-payload),
 }
 ```
+
+The `wit-value` arm (new in `@1.0.0`) carries a canonical-CBOR-encoded WIT record together with a 32-byte `canon:wit` shape hash and a symbolic name. Used by record-typed shim functions; hosts decode via wasm-side imports declared in the manifest's `typed-values` field. See [`MIGRATION-1.0.md`](MIGRATION-1.0.md).
 
 **Capability-graded worlds.** Pick the smallest world that fits the extension. A pure scalar function uses `minimal`. A stateful aggregate uses `stateful`. Mix in `lifecycle`, `authorizer`, or `hooks` as needed. Use `full` only when you genuinely need the kitchen sink.
 
 ## Versioning
 
-Pre-1.0. Breaking changes bump the `0.x` minor.
+`@1.0.0` is the first stable contract version. Subsequent breaking changes follow semver: incompatible WIT shape changes bump the MAJOR; additive interface members bump the MINOR. The contract surface — the union of all interfaces and worlds in `wit/` — is what the version covers.
+
+See [`MIGRATION-1.0.md`](MIGRATION-1.0.md) for the `@0.1.0` → `@1.0.0` upgrade guide.
 
 ## License
 
