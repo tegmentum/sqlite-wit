@@ -132,11 +132,44 @@ hosts just refusing the arm at the runtime gate
 
 ## Backwards compatibility
 
-Components compiled against `sqlite:extension@0.1.0` will be
-**rejected** by hosts speaking `@1.0.0` once the loader pre-check
-(plan Phase F, [#485 Phase 2][issue485]) lands. The two contract
-versions are not ABI-compatible: the canonical-ABI byte sequence for
-`sql-value` differs (new variant tag, new payload arm).
+Components compiled against `sqlite:extension@0.1.0` are **rejected**
+by hosts speaking `@1.0.0` — Phase F of `PLAN-wit-value-extension`
+([#485 Phase 2][issue485]) landed the loader pre-check. The two
+contract versions are not ABI-compatible: the canonical-ABI byte
+sequence for `sql-value` differs (new variant tag, new payload arm).
+
+### What an unmigrated `@0.x` extension sees against a `@1.x` host
+
+The pre-check runs before `Component::new` / `instantiate_async` and
+emits a model-level error — not a cryptic wasmtime trap — through
+every loader in the matrix:
+
+* **`sqlink-host` native binary**: load fails with
+  ```
+  extension '<name>' targets sqlite:extension contract 0.x but this host
+  speaks contract 1.x; rebuild it against the current WIT (or use the
+  matching host version)
+  ```
+  Wire-checked in `host/src/lib.rs::contract_guard_tests` (5 cases) and
+  surfaced through `sqlink --contract-version` (prints the host's major).
+* **`sqlink-loader.dylib`**: vanilla SQLite's `SELECT
+  load_extension('./sqlink-loader.so')` path inherits the same guard
+  via `Host::load_extension` and surfaces the same friendly message.
+  Tests: `sqlink-loader::load::tests::loader_path_rejects_*` (2 cases).
+* **`composed-cli-worker` (browser)**: jco's runtime-bindgen has no
+  equivalent reject-on-instantiate, so the worker pre-screens each
+  component's bytes via `src/contract-guard.js` (regex over the
+  component-model binary's import names) and throws the same error
+  through the `postMessage` response. Tests:
+  `browser/tests/contract-guard.test.mjs` (10 cases). The worker also
+  responds to a `contractVersion` message so test pages can introspect
+  which contract the embedded composed-cli speaks — analogous to
+  `sqlink --contract-version` on the native side.
+
+A legacy/unversioned component (no `sqlite:extension/...@MAJOR` import
+at all — a pre-versioning artifact) is rejected with the same message
+shape but the major reads as `UNVERSIONED` to make the diagnostic
+unambiguous.
 
 In the interim (between Phase A and Phase F), hosts loading an old
 `@0.1.0` component may see undefined behavior when `sql-value` flows
