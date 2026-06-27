@@ -337,6 +337,41 @@ world dotcmd-aware {
     export dot-command;
 }
 
+/// Purpose-built world for the `.bundle` dot-command extension.
+/// Same shape as `dotcmd-aware` minus `wal-frames` / `s3-base`
+/// (bundle-cli has no use for either) plus
+/// `sqlink:wasm/dispatch-bridge-cas` for direct CAS-cache SQL
+/// access. Bundle-cli stops calling `sqlite:extension/bundles`'s
+/// typed CRUD methods in favor of driving the same SQL through
+/// `bridged-execute-cas` directly — the host satisfies that
+/// import via `Cache::with_bundles_conn` instead of going through
+/// the typed `bundles::Host` surface.
+///
+/// `bundles` stays in the import set so the host's per-shape
+/// bindgen continues to find `bundles::Host` on `LoadedState`
+/// during the path-δ transition (the typed methods become thin
+/// delegates that call the same `bridged_execute_cas` body).
+/// Future cleanup: once every consumer has migrated off the typed
+/// surface, drop the import and delete the impl.
+world bundle-cli {
+    import types;
+    import spi;
+    import session;
+    import logging;
+    import config;
+    import cli-stdout;
+    import cli-stderr;
+    import cli-state;
+    import build;
+    import bundles;
+    import loader-bridge;
+    import dispatch-bridge-cas;
+
+    export metadata;
+    export scalar-function;
+    export dot-command;
+}
+
 /// Full-featured extension — every host capability available, every
 /// guest hook offered. Use this when an extension genuinely needs the
 /// kitchen sink; prefer a narrower world otherwise.
