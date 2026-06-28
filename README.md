@@ -1,3 +1,7 @@
+<p align="center">
+  <a href="https://github.com/tegmentum/sqlink"><img src="https://raw.githubusercontent.com/tegmentum/sqlink/main/sqlink_logo.png" alt="SQLink" width="320"></a>
+</p>
+
 # sqlite-loader-wit
 
 Canonical WIT contract for SQLite WebAssembly extensions. Defines the interface a `.wasm` extension implements so it can be loaded into a SQLite host — whether that host is native SQLite + a WASM runtime ([`sqlite-wasm-loader`](https://github.com/tegmentum/sqlite-wasm-loader)) or SQLite-compiled-to-WASM ([`sqlite-wasm`](https://github.com/tegmentum/sqlite-wasm)).
