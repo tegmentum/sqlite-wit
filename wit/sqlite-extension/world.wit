@@ -22,6 +22,7 @@ world minimal {
     import config;
     import wal-frames;
     import s3-base;
+    import compression;
     import build;
     import bundles;
 
@@ -44,6 +45,7 @@ world minimal-http {
     import http;
     import wal-frames;
     import s3-base;
+    import compression;
     import build;
     import bundles;
 
@@ -68,6 +70,7 @@ world minimal-dns {
     import dns;
     import wal-frames;
     import s3-base;
+    import compression;
     import build;
     import bundles;
 
@@ -87,6 +90,7 @@ world stateful {
     import cache;
     import wal-frames;
     import s3-base;
+    import compression;
     import build;
     import bundles;
 
@@ -109,6 +113,7 @@ world lifecycle-aware {
     import cache;
     import wal-frames;
     import s3-base;
+    import compression;
     import build;
     import bundles;
 
@@ -132,6 +137,7 @@ world resolving {
     import http;
     import wal-frames;
     import s3-base;
+    import compression;
     import build;
     import bundles;
 
@@ -153,6 +159,7 @@ world collating {
     import config;
     import wal-frames;
     import s3-base;
+    import compression;
     import build;
     import bundles;
 
@@ -175,6 +182,7 @@ world authorizing {
     import config;
     import wal-frames;
     import s3-base;
+    import compression;
     import build;
     import bundles;
 
@@ -200,6 +208,7 @@ world hooked {
     import config;
     import wal-frames;
     import s3-base;
+    import compression;
     import build;
     import bundles;
 
@@ -226,6 +235,7 @@ world wal-aware {
     import config;
     import wal-frames;
     import s3-base;
+    import compression;
     import build;
     import bundles;
 
@@ -251,6 +261,7 @@ world hookprobe {
     import config;
     import wal-frames;
     import s3-base;
+    import compression;
     import build;
     import bundles;
 
@@ -274,6 +285,7 @@ world tabular {
     import config;
     import wal-frames;
     import s3-base;
+    import compression;
     import build;
     import bundles;
 
@@ -296,6 +308,7 @@ world tabular-mutating {
     import config;
     import wal-frames;
     import s3-base;
+    import compression;
     import build;
     import bundles;
 
@@ -323,6 +336,7 @@ world dotcmd-aware {
     import cli-state;
     import wal-frames;
     import s3-base;
+    import compression;
     import build;
     import bundles;
     /// Phase 5 / follow-up: gives dot-command extensions a tight
@@ -390,6 +404,7 @@ world full {
     import dns;
     import wal-frames;
     import s3-base;
+    import compression;
     import build;
     import bundles;
     import cli-stdout;

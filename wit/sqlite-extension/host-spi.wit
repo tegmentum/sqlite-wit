@@ -336,6 +336,28 @@ interface s3-base {
     ) -> result<s3-put-object-output, s3-error>;
 }
 
+/// Compression primitives, satisfied host-side by forwarding to a warm
+/// resident `compression-endpoint` provider (one libzstd in the catalog,
+/// reused by every extension). Pure / non-egress — no capability grant. The
+/// `zstd` extension imports this and calls it from its scalar bodies instead
+/// of statically bundling its own copy of libzstd.
+interface compression {
+    /// Compress `data` at `level` into a self-framed zstd stream (magic
+    /// 28 b5 2f fd). Level 0 means "use libzstd's default" (3).
+    compress: func(data: list<u8>, level: s32) -> result<list<u8>, string>;
+
+    /// Decompress a self-framed zstd stream produced by `compress` (or any
+    /// other conforming encoder).
+    decompress: func(data: list<u8>) -> result<list<u8>, string>;
+
+    /// Compress `data` at `level` using `dict` as a raw dictionary; the same
+    /// bytes must be passed to `decompress-dict`.
+    compress-dict: func(data: list<u8>, dict: list<u8>, level: s32) -> result<list<u8>, string>;
+
+    /// Decompress with the same raw dictionary used to encode.
+    decompress-dict: func(data: list<u8>, dict: list<u8>) -> result<list<u8>, string>;
+}
+
 /// Loader / host-specific extensions to `spi`. Distinct interface
 /// because these methods are about hosting OTHER extensions (the
 /// register-* trampolines + cli-mode toggles), not about querying
