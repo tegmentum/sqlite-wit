@@ -175,7 +175,7 @@ In the interim (between Phase A and Phase F), hosts loading an old
 `@0.1.0` component may see undefined behavior when `sql-value` flows
 across the boundary. The recommended migration path is mechanical:
 
-1. Pull the latest `sqlite-loader-wit` submodule on each extension's
+1. Pull the latest `sqlite-wit` submodule on each extension's
    workspace.
 2. `cargo clean && cargo build --release --target wasm32-wasip2` (the
    wit-bindgen cache won't pick up the contract change without a

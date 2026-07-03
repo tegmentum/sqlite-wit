@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "Canonical Rust types for the sqlite:extension/policy WIT contract — capability allow-list, HTTP allowlist with wildcard suffixes, fuel/memory/epoch knobs, error variants. Used by both sqlink-loader (native) and sqlink-host (in-WASM) so a single Policy value ports between deployment modes."
 license = "MIT"
-repository = "https://github.com/tegmentum/sqlite-loader-wit"
+repository = "https://github.com/tegmentum/sqlite-wit"
 readme = "README.md"
 
 [lib]
